@@ -161,7 +161,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
             if not self.cartActive:
                 self.robot.manualCartMode()
                 # self.cart_connect()
-                self.cartTimer.start(200)
+                self.cartTimer.start(150)
                 self.cartActive = True
                 self.update_cart()
                 for sld in self.sliders[:3]:
@@ -187,7 +187,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
             if not self.jointActive:
                 self.robot.manualJointMode()
                 # self.joint_connect()
-                self.jointTimer.start(200)
+                self.jointTimer.start(150)
                 self.jointActive = True
                 self.update_joint()
                 self.btnManualCart.setEnabled(False)
