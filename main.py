@@ -5,6 +5,7 @@ from motion.robot_control import InterpreterStates
 import sys, os, math, design, time, datetime, cv2
 import numpy as np
 from ultralytics import YOLO
+from PyQt5.QtGui import QImage, QPixmap
 
 class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
     DEFAULT_RX = math.pi / 2
@@ -108,16 +109,17 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.moves_enabled = False
 
         self.cls2cat = {
-            "": "Box1",
-            "": "Box1",
-            "": "Reject"
+            "box1": "Box1",
+            "box2": "Box2",
+            "box3": "Box3",
+            "reject": "Reject"
         }
 
-        self.btnCamera.clicked.connect(self.in_next_update)
-        self.btnVideo.clicked.connect(self.in_next_update)
-        self.btnDetectObjects.clicked.connect(self.in_next_update)
+        self.btnCamera.clicked.connect(self.camera)
+        self.btnVideo.clicked.connect(self.video)
+        self.btnDetectObjects.clicked.connect(self.toggle_objects)
 
-        # self.yolo = YOLO('best.pt')
+        self.yolo = YOLO('best.pt')
         self.cap = None
         self.videoActive = False
         self.cameraActive = False
@@ -569,7 +571,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         except:
             QtWidgets.QMessageBox.warning(self, 'Error', 'Ошибка загрузки очереди')
 
-    def Camera(self):
+    def camera(self):
         if not self.cameraActive:
             if self.cap:
                 try: self.cap.release()
@@ -590,9 +592,9 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
             if hasattr(self, 'lCamera2'): self.lCamera2.clear()
             self.add_log('Камера остановлена')
 
-    def Video(self):
+    def video(self):
         if not self.videoActive:
-            src = '1.webm'
+            src = 'video.webm'
             if self.cap:
                 try: self.cap.release()
                 except: pass
@@ -618,12 +620,12 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
             self.btnDetectObjects.setText("Stop Detection" if self.det_objects else "Detect Objects")
         self.add_log("Детекция объектов: ON" if self.det_objects else "Детекция объектов: OFF")
 
-    def _dedup(self, name, cx, cy):
+    def dedup(self, name, cx, cy):
         k, now = (name, cx//10, cy//10), int(time.time()*1000)
         if now - self._seen.get(k, 0) < self._ttl: return False
         self._seen[k] = now; return True
 
-    def _ok(self, name: str) -> bool:
+    def ok(self, name: str) -> bool:
         name = name.lower()
         mapping = {
             '': getattr(self, 'cbBox1', None),
@@ -637,8 +639,8 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         if label is None: return
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
         h, w, c = rgb.shape
-        qimg = Qt.QImage(rgb.data, w, h, w * c, Qt.QImage.Format_RGB888)
-        label.setPixmap(Qt.QPixmap.fromImage(qimg).scaled(label.width(), label.height(), QtCore.Qt.KeepAspectRatio))
+        qimg = QImage(rgb.data, w, h, w * c, QImage.Format_RGB888)
+        label.setPixmap(QPixmap.fromImage(qimg).scaled(label.width(), label.height(), QtCore.Qt.KeepAspectRatio))
 
     def tick(self):
         if not self.cap:
@@ -665,36 +667,30 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         if self.det_objects:
             try:
                 r = self.yolo(frame, verbose=False, device='cpu')[0]
-
                 if hasattr(r, 'boxes') and r.boxes is not None:
-                    keep = [self._ok(str(self.yolo.names[int(b.cls[0])]).lower()) for b in r.boxes]
+                    keep = [self.ok(str(self.yolo.names[int(b.cls[0])]).lower()) for b in r.boxes]
                     if any(keep):
                         import numpy as np
                         r.boxes = r.boxes[np.array(keep, dtype=bool)]
                     else:
                         r.boxes = r.boxes[:0]
-
                     for b in r.boxes:
                         cls_id = int(b.cls[0])
                         name = str(self.yolo.names[cls_id]).lower()
                         x1, y1, x2, y2 = map(int, b.xyxy[0])
                         cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-                        if self._dedup(name, cx, cy):
+                        if self.dedup(name, cx, cy):
                             self.add_log(f"Detected {name}")
-                            if self.moves_enabled and not self.people_present:
-                                self.run_session_yolo(name)
-                            else:
-                                self.add_log("Перемещение отключено" if not self.moves_enabled else "Ожидание: человек в зоне")
-
                 img1 = r.plot()
             except Exception as e:
                 self.add_log(f"YOLO error: {e}")
-
         if hasattr(self, 'lCamera1'): self.to_label(self.lCamera1, img1)
         if hasattr(self, 'lCamera2'): self.to_label(self.lCamera2, img2)
 
     def in_next_update(self):
         return QtWidgets.QMessageBox.about(self, 'Info', 'Этот функционал будет добавлен в следующих обновлениях!')
+    
+    
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

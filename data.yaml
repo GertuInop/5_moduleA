@@ -1,0 +1,6 @@
+train: YOLO/img_lab/train/images
+val: YOLO/img_lab/valid/images
+test: YOLO/img_lab/test/images
+
+nc: 4
+names: [box1, box2, box3, reject]
