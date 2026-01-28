@@ -38,7 +38,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         }
         self.cellTracks = {1:1,2:1}
 
-        self.rejectCell = [1.05, -0.17, -0.109]
+        self.rejectCell = [1.05, -0.17, -0.11]
         self.rejectTrack = 0.0
 
         self.allowed = {'Box1': [1,2], 'Box2': [], 'Box3': []}
@@ -474,14 +474,14 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         up = 0.20
         rx, ry, rz = getattr(self, 'DEFAULT_RX', 0.0), getattr(self, 'DEFAULT_RY', 0.0), getattr(self, 'DEFAULT_RZ', 0.0)
 
-        self.robot.addMoveToPointL([Waypoint([0.0, 0.0, 0.0, rx, ry, rz])])
-        self.robot.addLinearTrackMove(self.takeTrack)
+        self.robot.addMoveToPointL([Waypoint([0.85, -0.19, 0.9, rx, ry, rz])])
+        # self.robot.addLinearTrackMove(self.takeTrack)
         self.robot.addMoveToPointL([Waypoint([*self.takeCell[:2], self.takeCell[2]+up, rx, ry, rz])])
         self.robot.addMoveToPointL([Waypoint([*self.takeCell, rx, ry, rz])])
         self.robot.addToolState(1)
         self.robot.addMoveToPointL([Waypoint([*self.takeCell[:2], self.takeCell[2]+up, rx, ry, rz])])
 
-        self.robot.addLinearTrackMove(dst_track)
+        # self.robot.addLinearTrackMove(dst_track)
         self.robot.addMoveToPointL([Waypoint([*dst_pos[:2], dst_pos[2]+up, rx, ry, rz])])
         self.robot.addMoveToPointL([Waypoint([*dst_pos, rx, ry, rz])])
         self.robot.addToolState(0)
@@ -510,7 +510,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
                     self.pick_and_place(self.cells[slot], self.cellTracks[slot])
                 while self.robot.getActualStateOut() != 200:
                 # while self.robot.getActualStateOut() == 200:
-                    time.sleep(0.1)
+                    time.sleep(0.2)
                 self.add_log(f'Перемещение в коробку {cat} завершено')
                 self.robot.play()
             self.robot.moveToInitialPose()
