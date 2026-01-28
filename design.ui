@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>822</width>
-    <height>881</height>
+    <width>1199</width>
+    <height>986</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -141,7 +141,7 @@
       <x>500</x>
       <y>560</y>
       <width>311</width>
-      <height>311</height>
+      <height>421</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -171,6 +171,20 @@
        <property name="bottomMargin">
         <number>5</number>
        </property>
+       <item row="1" column="1">
+        <widget class="QPushButton" name="btnClearSession">
+         <property name="text">
+          <string>Clear Session</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QPushButton" name="btnDownloadSession">
+         <property name="text">
+          <string>Save Session</string>
+         </property>
+        </widget>
+       </item>
        <item row="0" column="0">
         <widget class="QComboBox" name="cbObjects">
          <item>
@@ -195,13 +209,6 @@
          </item>
         </widget>
        </item>
-       <item row="0" column="1">
-        <widget class="QPushButton" name="btnAddObject">
-         <property name="text">
-          <string>Add Object</string>
-         </property>
-        </widget>
-       </item>
        <item row="1" column="0">
         <widget class="QPushButton" name="btnDeleteLast">
          <property name="text">
@@ -209,20 +216,23 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
-        <widget class="QPushButton" name="btnClearSession">
+       <item row="0" column="1">
+        <widget class="QPushButton" name="btnAddObject">
          <property name="text">
-          <string>Clear Session</string>
+          <string>Add Object</string>
          </property>
         </widget>
        </item>
        <item row="2" column="0">
         <widget class="QLineEdit" name="leSessionPath"/>
        </item>
-       <item row="2" column="1">
-        <widget class="QPushButton" name="btnDownloadSession">
+       <item row="3" column="0">
+        <widget class="QLineEdit" name="leLoadSessionPath"/>
+       </item>
+       <item row="3" column="1">
+        <widget class="QPushButton" name="btnLoadSession">
          <property name="text">
-          <string>Download Session</string>
+          <string>Load Session</string>
          </property>
         </widget>
        </item>
@@ -245,6 +255,13 @@
          <widget class="QListView" name="lvSession"/>
         </item>
        </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnSlotsClear">
+       <property name="text">
+        <string>Notify Slots Clear</string>
+       </property>
       </widget>
      </item>
     </layout>
@@ -845,7 +862,7 @@
       <x>13</x>
       <y>563</y>
       <width>481</width>
-      <height>311</height>
+      <height>421</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -907,6 +924,192 @@
          <widget class="QListView" name="lvLogs"/>
         </item>
        </layout>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>820</x>
+      <y>50</y>
+      <width>371</width>
+      <height>631</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout_17">
+     <property name="leftMargin">
+      <number>5</number>
+     </property>
+     <property name="topMargin">
+      <number>5</number>
+     </property>
+     <property name="rightMargin">
+      <number>5</number>
+     </property>
+     <property name="bottomMargin">
+      <number>5</number>
+     </property>
+     <item>
+      <widget class="QGroupBox" name="verticalGroupBox">
+       <layout class="QVBoxLayout" name="verticalLayout_15">
+        <property name="leftMargin">
+         <number>5</number>
+        </property>
+        <property name="topMargin">
+         <number>5</number>
+        </property>
+        <property name="rightMargin">
+         <number>5</number>
+        </property>
+        <property name="bottomMargin">
+         <number>5</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="verticalGroupBox_3">
+       <layout class="QVBoxLayout" name="verticalLayout_16">
+        <property name="leftMargin">
+         <number>5</number>
+        </property>
+        <property name="topMargin">
+         <number>5</number>
+        </property>
+        <property name="rightMargin">
+         <number>5</number>
+        </property>
+        <property name="bottomMargin">
+         <number>5</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>820</x>
+      <y>10</y>
+      <width>371</width>
+      <height>35</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_6">
+     <property name="leftMargin">
+      <number>5</number>
+     </property>
+     <property name="topMargin">
+      <number>5</number>
+     </property>
+     <property name="rightMargin">
+      <number>5</number>
+     </property>
+     <property name="bottomMargin">
+      <number>5</number>
+     </property>
+     <item>
+      <widget class="QPushButton" name="btnVideo">
+       <property name="text">
+        <string>Video</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnCamera">
+       <property name="text">
+        <string>Camera</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>820</x>
+      <y>690</y>
+      <width>371</width>
+      <height>291</height>
+     </rect>
+    </property>
+    <layout class="QGridLayout" name="gridLayout_4">
+     <item row="0" column="0">
+      <widget class="QCheckBox" name="cbBox1">
+       <property name="text">
+        <string>Box1</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QCheckBox" name="cbBox2">
+       <property name="text">
+        <string>Box2</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QCheckBox" name="cbBox3">
+       <property name="text">
+        <string>Box3</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QCheckBox" name="cbReject">
+       <property name="text">
+        <string>Reject</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QPushButton" name="btnDetectObjects">
+       <property name="text">
+        <string>Detect Objects</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QPushButton" name="btnDetectPeople">
+       <property name="text">
+        <string>Detect People</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="2">
+      <widget class="QPushButton" name="btnMoveOn">
+       <property name="text">
+        <string>Move ON</string>
+       </property>
       </widget>
      </item>
     </layout>

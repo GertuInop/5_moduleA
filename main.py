@@ -3,6 +3,8 @@ from PyQt5.QtCore import Qt
 from motion.core import RobotControl, LedLamp, Waypoint
 from motion.robot_control import InterpreterStates
 import sys, os, math, design, time, datetime
+import numpy as np
+from ultralytics import YOLO
 
 class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
     DEFAULT_RX = math.pi / 2
@@ -13,7 +15,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
         self.robot = RobotControl()
-        self.lamp = LedLamp()
+        self.lamp = LedLamp('192.168.2.101')
 
         self.gripper = 0
         self.onOff = False
@@ -23,8 +25,6 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.cartActive = False
         self.jointActive = False
 
-        self.points = []
-
         self.labels = [self.lWait, self.lWork, self.lPause, self.lStop]
         self.sliders = [self.s1, self.s2, self.s3, self.s4, self.s5, self.s6]
 
@@ -32,17 +32,16 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.takeTrack = 0.0
 
         self.cells = {
-            1: [0.0, 0.0, 0.0], 2: [0.0, 0.0, 0.0], 3: [0.0, 0.0, 0.0], 4: [0.0, 0.0, 0.0],
-            5: [0.0, 0.0, 0.0], 6: [0.0, 0.0, 0.0], 7: [0.0, 0.0, 0.0], 8: [0.0, 0.0, 0.0],
-            9: [0.0, 0.0, 0.0], 10: [0.0, 0.0, 0.0], 11: [0.0, 0.0, 0.0], 12: [0.0, 0.0, 0.0]
+            1: [0.0, 0.0, 0.0], 2: [0.0, 0.0, 0.0]
         }
-        self.cellTracks = {1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1,9:1,10:1,11:1,12:1}
+        self.cellTracks = {1:1,2:1}
 
         self.rejectCell = [0.0, 0.0, 0.0]
         self.rejectTrack = 0.0
 
-        self.allowed = {'Box1': [1,2,3,4], 'Box2': [5,6,7,8], 'Box3': [9,10,11,12]}
-        self.occupied = [False, False, False, False, False, False, False, False, False, False, False, False, False]
+        self.allowed = {'Box1': [1,2], 'Box2': [], 'Box3': []}
+        self.occupied = {i: False for i in range(1,3)}
+        self.start_remove_slot = None
 
         self.btnOnOff.clicked.connect(self.on_off)
         self.btnPause.clicked.connect(self.set_pause)
@@ -72,17 +71,13 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.sb13.valueChanged.connect(self.save_stats_3)
         self.sb23.valueChanged.connect(self.save_stats_3)
 
-        self.btnAddObject.clicked.connect(self.in_next_update)
-        self.btnDeleteLast.clicked.connect(self.in_next_update)
-        self.btnClearSession.clicked.connect(self.in_next_update)
-        self.btnRunSession.clicked.connect(self.in_next_update)
-        self.btnDownloadSession.clicked.connect(self.in_next_update)
-
-        # self.btnAddObject.clicked.connect(self.add_from_cb)
-        # self.btnDeleteLast.clicked.connect(self.delete_last)
-        # self.btnClearSession.clicked.connect(self.clear_list)
-        # self.btnRunSession.clicked.connect(self.run_session)
-        # self.btnDownloadSession.clicked.connect(self.download_session)
+        self.btnAddObject.clicked.connect(self.add_from_cb)
+        self.btnDeleteLast.clicked.connect(self.delete_last)
+        self.btnClearSession.clicked.connect(self.clear_list)
+        self.btnRunSession.clicked.connect(self.run_session)
+        self.btnDownloadSession.clicked.connect(self.download_session)
+        self.btnLoadSession.clicked.connect(self.load_session)
+        self.btnSlotsClear.clicked.connect(self.clear_slots)
 
         self.logs = []
         self.e_logs = []
@@ -106,6 +101,17 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.session = []
         self.session_model = QtCore.QStringListModel()
         self.lvSession.setModel(self.session_model)
+
+        self.busy = False
+        self.moves_enabled = False
+
+        self.cls2cat = {
+            '': 'Box1',
+            '': 'Box2',
+            '': 'Reject'
+        }
+
+        self.yolo
 
         self.add_log('Приложение запущено')
 
@@ -200,7 +206,6 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         if self.onOff:
             if not self.cartActive:
                 self.robot.manualCartMode()
-                # self.cart_connect()
                 self.cartTimer.start(150)
                 self.cartActive = True
                 self.update_cart()
@@ -210,7 +215,6 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
                 self.btnManualCart.setText('Stop Cart')
                 self.add_log('Ручной режим Декарта включён')
             else:
-                # self.cart_disconnect()
                 self.cartTimer.stop()
                 self.cartActive = False
                 self.update_cart()
@@ -226,7 +230,6 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         if self.onOff:
             if not self.jointActive:
                 self.robot.manualJointMode()
-                # self.joint_connect()
                 self.jointTimer.start(25)
                 self.jointActive = True
                 self.update_joint()
@@ -236,7 +239,6 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
                     sld.setEnabled(True)
                 self.add_log('Ручной режим Сочленений включён')
             else:
-                # self.joint_disconnect()
                 self.jointTimer.stop()
                 self.jointActive = False
                 self.update_joint()
@@ -247,32 +249,6 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
                 self.add_log('Ручной режим Сочленений выключён')
         else:
             return QtWidgets.QMessageBox.warning(self, 'Error', 'Робот не запущен')
-    
-    # def cart_connect(self):
-    #     self.s1.valueChanged.connect(self.update_cart)
-    #     self.s2.valueChanged.connect(self.update_cart)
-    #     self.s3.valueChanged.connect(self.update_cart)
-
-    # def cart_disconnect(self):
-    #     self.s1.valueChanged.disconnect(self.update_cart)
-    #     self.s2.valueChanged.disconnect(self.update_cart)
-    #     self.s3.valueChanged.disconnect(self.update_cart)
-
-    # def joint_connect(self):
-    #     self.s1.valueChanged.connect(self.update_joint)
-    #     self.s2.valueChanged.connect(self.update_joint)
-    #     self.s3.valueChanged.connect(self.update_joint)
-    #     self.s4.valueChanged.connect(self.update_joint)
-    #     self.s5.valueChanged.connect(self.update_joint)
-    #     self.s6.valueChanged.connect(self.update_joint)
-
-    # def joint_disconnect(self):
-    #     self.s1.valueChanged.disconnect(self.update_joint)
-    #     self.s2.valueChanged.disconnect(self.update_joint)
-    #     self.s3.valueChanged.disconnect(self.update_joint)
-    #     self.s4.valueChanged.disconnect(self.update_joint)
-    #     self.s5.valueChanged.disconnect(self.update_joint)
-    #     self.s6.valueChanged.disconnect(self.update_joint)
 
     def update_cart(self):
         v1 = self.s1.value() / 100.0
@@ -443,6 +419,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         log = f'[{time}] - {msg}'
         self.logs.append(log)
         self.e_logs.append(log)
+        self.lvLogs
         self.log_model.setStringList(self.logs)
 
     def sld_to_zero(self):
@@ -471,7 +448,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.add_log('Список очищен')
 
     def chose_slot(self, cat):
-        for i in self.allowed:
+        for i in self.allowed.get(cat, []):
             if not self.occupied[i]:
                 self.occupied[i] = True
                 return i
@@ -481,6 +458,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         up = 0.10
         rx, ry, rz = getattr(self, 'DEFAULT_RX', 0.0), getattr(self, 'DEFAULT_RY', 0.0), getattr(self, 'DEFAULT_RZ', 0.0)
 
+        self.robot.addMoveToPointL([Waypoint([0.0, 0.0, 0.0, rx, ry, rz])])
         self.robot.addLinearTrackMove(self.takeTrack)
         self.robot.addMoveToPointL([Waypoint([*self.takeCell[:2], self.takeCell[2]+up, rx, ry, rz])])
         self.robot.addMoveToPointL([Waypoint([*self.takeCell, rx, ry, rz])])
@@ -492,7 +470,6 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.robot.addMoveToPointL([Waypoint([*dst_pos, rx, ry, rz])])
         self.robot.addToolState(0)
         self.robot.addMoveToPointL([Waypoint([*dst_pos[:2], dst_pos[2]+up, rx, ry, rz])])
-        self.robot.moveToInitialPose()
     
     def run_session(self):
         if not self.session:
@@ -500,22 +477,36 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
             return
         self.add_log('Очередь перемещения началась')
         try:
-            for i in enumerate(self.session):
-                cat = self.session[i]
+            isWasInfo = False
+            for cat in self.session:
+                self.add_log(f'Начинается перемещение в коробку {cat}')
                 if cat == 'Reject':
                     self.pick_and_place(self.rejectCell, self.rejectTrack)
                 else:
                     slot = self.chose_slot(cat)
                     if slot is None:
-                        self.add_log('Все слоты заполнены')
+                        if not isWasInfo:
+                            QtWidgets.QMessageBox.information(self, 'Info', 'Требуется освобождение слотов')
+                            isWasInfo = True
+                            self.set_lamp_code('0001')
+                        self.add_log(f'Требуется освобождение слотов для {cat}')
                         continue
                     self.pick_and_place(self.cells[slot], self.cellTracks[slot])
-                while self.robot.getActualStateOut() != 200:
-                    time.sleep(0.2)
+                # while self.robot.getActualStateOut() != 200:
+                while self.robot.getActualStateOut() == 200:
+                    time.sleep(0.1)
+                self.add_log(f'Перемещение в коробку {cat} завершено')
                 self.robot.play()
+            self.robot.moveToInitialPose()
             self.add_log('Очередь перемещения завершена')
         except:
             return QtWidgets.QMessageBox.warning(self, 'Error', 'Ошибка запуска очереди')
+    
+    def clear_slots(self):
+        for i in range(len(self.occupied) + 1):
+            self.occupied[i] = False
+        self.set_lamp_code('0100')
+        self.add_log('Слоты очищены')
 
     def download_session(self):
         filename = self.leSessionPath.text().strip()
@@ -535,6 +526,32 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
             self.add_log(f'Очередь сохранена по пути {filename}')
         except:
             QtWidgets.QMessageBox.warning(self, 'Error', 'Ошибка сохранения очереди')
+
+    def load_session(self):
+        filename = self.leLoadSessionPath.text().strip()
+        if not filename:
+            filename, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self, 'Select file', QtCore.QDir.homePath(), 'Text Files (*.txt);; All Files (*)'
+            )
+            if not filename:
+                return QtWidgets.QMessageBox.warning(self, 'Error', 'Нужно выбрать файл')
+        
+        filename = filename if filename.endswith('.txt') else f'{filename}.txt'
+        self.leLoadSessionPath.setText(filename)
+
+        try:
+            with open(filename, encoding='UTF-8') as f:
+                oke = []
+                for l in f:
+                    line = l.replace('\n', '')
+                    if line in ['Box1', 'Box2', 'Box3', 'Reject']:
+                        self.session.append(line)
+                        self.refresh_session()
+                    else:
+                        return QtWidgets.QMessageBox.warning(self, 'Error', 'В очереди есть несуществующие объекты')
+                self.add_log('Очередь загружена')
+        except:
+            QtWidgets.QMessageBox.warning(self, 'Error', 'Ошибка загрузки очереди')
 
     def in_next_update(self):
         return QtWidgets.QMessageBox.about(self, 'Info', 'Этот функционал будет добавлен в следующих обновлениях!')
