@@ -73,6 +73,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.sb22.valueChanged.connect(self.save_stats_2)
         self.sb13.valueChanged.connect(self.save_stats_3)
         self.sb23.valueChanged.connect(self.save_stats_3)
+        self.sb1.valueChanged.connect(self.save_stats_4)
 
         self.btnAddObject.clicked.connect(self.add_from_cb)
         self.btnDeleteLast.clicked.connect(self.delete_last)
@@ -118,6 +119,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.btnCamera.clicked.connect(self.camera)
         self.btnVideo.clicked.connect(self.video)
         self.btnDetectObjects.clicked.connect(self.toggle_objects)
+        self.btnDetectPeople.clicked.connect(self.detect_people)
 
         self.yolo = YOLO('best.pt')
         self.cap = None
@@ -127,6 +129,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.det_was_active = False
         self.people_present = False
         self._seen, self._ttl = {}, 2000
+        self.current_name = None
 
         self.frame_timer = QtCore.QTimer(self)
         self.frame_timer.timeout.connect(self.tick)
@@ -388,7 +391,8 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         rows = [
             [self.sb11.value(), self.sb21.value(), self.leTime31.text().strip()],
             [self.sb12.value(), self.sb22.value(), self.leTime32.text().strip()],
-            [self.sb13.value(), self.sb23.value(), self.leTime33.text().strip()]
+            [self.sb13.value(), self.sb23.value(), self.leTime33.text().strip()],
+            [self.sb1.value(), self.leTime34.text().strip()],
         ]
 
         try:
@@ -413,6 +417,11 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def save_stats_3(self):
         time = datetime.datetime.now().strftime('%H:%M:%S')
         self.leTime33.setText(time)
+        self.save_stats()
+
+    def save_stats_4(self):
+        time = datetime.datetime.now().strftime('%H:%M:%S')
+        self.leTime34.setText(time)
         self.save_stats()
 
     def set_lamp_code(self, code: str):
@@ -615,6 +624,8 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
             self.add_log('Видео остановлено')
 
     def toggle_objects(self):
+        if self.leStatsPath.text().strip() == '':
+            return QtWidgets.QMessageBox.warning(self, 'Error', 'Напишите путь сохранения статистики')
         self.det_objects = not self.det_objects
         if hasattr(self, 'btnDetectObjects'):
             self.btnDetectObjects.setText("Stop Detection" if self.det_objects else "Detect Objects")
@@ -628,9 +639,10 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def ok(self, name: str) -> bool:
         name = name.lower()
         mapping = {
-            '': getattr(self, 'cbBox1', None),
-            '': getattr(self, 'cbBox2', None),
-            '': getattr(self, 'cbReject', None)
+            'box1': getattr(self, 'cbBox1', None),
+            'box2': getattr(self, 'cbBox2', None),
+            'box3': getattr(self, 'cbBox3', None),
+            'reject': getattr(self, 'cbReject', None)
         }
         w = mapping.get(name)
         return bool(w and w.isChecked())
@@ -679,13 +691,35 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
                         name = str(self.yolo.names[cls_id]).lower()
                         x1, y1, x2, y2 = map(int, b.xyxy[0])
                         cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-                        if self.dedup(name, cx, cy):
-                            self.add_log(f"Detected {name}")
+                        if self.current_name != name and self.dedup(name, cx, cy):
+                            self.current_name = name
+                            self.update_stats(name)
+                            self.add_log(f"Обнаружен {name}")
                 img1 = r.plot()
             except Exception as e:
                 self.add_log(f"YOLO error: {e}")
         if hasattr(self, 'lCamera1'): self.to_label(self.lCamera1, img1)
         if hasattr(self, 'lCamera2'): self.to_label(self.lCamera2, img2)
+
+    def update_stats(self, cat):
+        if cat in ['box1', 'box2', 'box3', 'reject']:
+            match cat:
+                case 'box1': self.sb11.setValue(self.sb11.value() + 1)
+                case 'box2': self.sb12.setValue(self.sb12.value() + 1)
+                case 'box3': self.sb13.setValue(self.sb13.value() + 1)
+                case 'reject': self.sb1.setValue(self.sb1.value() + 1)
+    
+    def detect_people(self):
+        if not self.people_present:
+            self.label_9.setStyleSheet('background-color: red')
+            self.people_present = True
+            self.btnDetectPeople.setText('Stop Detection')
+            self.add_log('На площадке обнаружен человек')
+        else:
+            self.label_9.setStyleSheet('')
+            self.people_present = False
+            self.btnDetectPeople.setText('Detect People')
+            self.add_log('Человек ушёл с площадки')
 
     def in_next_update(self):
         return QtWidgets.QMessageBox.about(self, 'Info', 'Этот функционал будет добавлен в следующих обновлениях!')
