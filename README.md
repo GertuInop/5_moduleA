@@ -1,4 +1,4 @@
-# Интерфейс для управления промышленной роботизированной линии (Ручное управление)
+# Интерфейс для управления промышленной роботизированной линии
 ## Установка
 Для устновки программы вам потребуется операционная система [Linux (Ubuntu 22.04)](https://releases.ubuntu.com/jammy/), язык программирования [Python](https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.python.org/&ved=2ahUKEwjOk9yzp6uSAxVDExAIHazVF4sQFnoECCoQAQ&usg=AOvVaw0QREvGsjwHKp2GtoYvs1JH) и любая программа для редактирования кода (VS Code, PyCharm).
 Из библиотек вам понадобятся:
