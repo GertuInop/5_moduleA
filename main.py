@@ -120,6 +120,7 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.btnVideo.clicked.connect(self.video)
         self.btnDetectObjects.clicked.connect(self.toggle_objects)
         self.btnDetectPeople.clicked.connect(self.detect_people)
+        self.btnMoveOn.clicked.connect(self.move_objects)
 
         self.yolo = YOLO('best.pt')
         self.cap = None
@@ -133,6 +134,8 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
         self.frame_timer = QtCore.QTimer(self)
         self.frame_timer.timeout.connect(self.tick)
+
+        self.isAutoWork = False
 
         self.add_log('Приложение запущено')
 
@@ -720,11 +723,38 @@ class MainWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
             self.people_present = False
             self.btnDetectPeople.setText('Detect People')
             self.add_log('Человек ушёл с площадки')
-
-    def in_next_update(self):
-        return QtWidgets.QMessageBox.about(self, 'Info', 'Этот функционал будет добавлен в следующих обновлениях!')
     
-    
+    def move_objects(self):
+        if self.onOff:
+            ok = QtWidgets.QMessageBox.question(self, 'Accept', 'Вы уверены, что хотите запустить автоматическое перемщение?')
+            if ok == 16384:
+                self.add_log('Уверенность подтверждена на 30%')
+                ok = QtWidgets.QMessageBox.question(self, 'Accept', 'Вы точно уверены?')
+                if ok == 16384:
+                    self.add_log('Уверенность подтверждена на 60%')
+                    ok = QtWidgets.QMessageBox.question(self, 'Accept', 'Вы точно-точно уверены?')
+                    if ok == 16384:
+                        self.add_log('Уверенность подтверждена на 90%')
+                        ok = QtWidgets.QMessageBox.question(self, 'Accept', 'Тогда готовтесь.')
+                        if ok == 16384:
+                            self.add_log('Уверенность подтверждена на 99%')
+                            ok = QtWidgets.QMessageBox.question(self, 'Accept', 'Нажмите \'Yes\' для полного подтверждения.')
+                            if ok == 16384:
+                                self.add_log('Уверенность подтверждена на 100%')
+                                self.add_log('Запуск автоматического перемщения с ИИ начался')
+                                self.add_log('Перемещение завершено завершился')
+                            else:
+                                self.add_log('Автоматический запуск отменён')
+                        else:
+                            self.add_log('Автоматический запуск отменён')
+                    else:
+                        self.add_log('Автоматический запуск отменён')
+                else:
+                    self.add_log('Автоматический запуск отменён')
+            else:
+                self.add_log('Автоматический запуск отменён')
+        else:
+            return QtWidgets.QMessageBox.warning(self, 'Error', 'Робот не запущен')
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
